@@ -39,8 +39,8 @@ MUSIC_FOLDER_NAME = 'music/'
 
 # zapisywane wykresy
 CLS_PLOT_FOLDER_NAME = 'plots/classification/'
-REG_PLOT_FOLDER_NAME = 'plots/regression/'
-PLOT_NAME = 'Feature Importance.png'
+# REG_PLOT_FOLDER_NAME = 'plots/regression/'
+# PLOT_NAME = 'Feature Importance.png'
 
 songs = {
     'Armin van Buuren & David Guetta feat. Aldae - In The Dark' : 'Armin van Buuren & David Guetta feat. Aldae - In The Dark.mp3',
