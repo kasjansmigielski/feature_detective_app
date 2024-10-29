@@ -1023,29 +1023,39 @@ with tab2:
 
                                     # sprawdzenie czy znaleziony BEST MODEL posiada możliwość generowania wykresu funkcji
                                     if hasattr(best_classify_model, 'coef_') or hasattr(best_classify_model, 'feature_importances_'):
+
+                                    
                                         
-                                        # korzystam z tymczasowej zmiennej zeby obluzyc dzialanie z Digital Ocean App
-                                        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                                                    plot_file_path = tmp_file.name
+                                        cls_plot_model(best_classify_model, plot='feature', save=True, verbose= False)
+                                        with open('Feature Importance.png', 'rb') as f:
+                                            st.session_state['feature_importance'] = f.read()
 
-                                        # Wygeneruj i zapisz wykres
-                                        cls_plot_model(best_classify_model, plot='feature', save=True)
-                                        os.rename('Feature Importance.png', plot_file_path)
+                                        st.image(st.session_state['feature_importance'])
+                                        
+                                        st.stop()
+                                        
+                                        # # korzystam z tymczasowej zmiennej zeby obluzyc dzialanie z Digital Ocean App
+                                        # with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+                                        #             plot_file_path = tmp_file.name
 
-                                        # Wyświetl wykres w Streamlit
-                                        st.image(plot_file_path, use_column_width=True)
+                                        # # Wygeneruj i zapisz wykres
+                                        # cls_plot_model(best_classify_model, plot='feature', save=True)
+                                        # os.rename('Feature Importance.png', plot_file_path)
 
-                                        # Opis wykresu
-                                        st.markdown('#### Opis wykresu:')
-                                        cls_description = describe_plot(plot_file_path)
-                                        st.write(cls_description)
+                                        # # Wyświetl wykres w Streamlit
+                                        # st.image(plot_file_path, use_column_width=True)
 
-                                        # Rekomendacje
-                                        st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
-                                        st.write(generate_recommendations(cls_description))
+                                        # # Opis wykresu
+                                        # st.markdown('#### Opis wykresu:')
+                                        # cls_description = describe_plot(plot_file_path)
+                                        # st.write(cls_description)
 
-                                        # Usuń plik tymczasowy
-                                        os.remove(plot_file_path)
+                                        # # Rekomendacje
+                                        # st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
+                                        # st.write(generate_recommendations(cls_description))
+
+                                        # # Usuń plik tymczasowy
+                                        # os.remove(plot_file_path)
 
                                     else:
                                         st.error(
