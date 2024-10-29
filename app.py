@@ -837,7 +837,7 @@ with tab2:
                 st.markdown(text_for_user, unsafe_allow_html=True)
             
             if not st.session_state['go_to_target_column_button_clicked']:
-                st.button('Przejdź do wyboru kolumny', on_click = functional_button_click, 
+                st.button('Przejdź do wyboru kolumny ', on_click = functional_button_click, 
                         args=('go_to_target_column_button_clicked', ), use_container_width=True)
 
             if st.session_state['go_to_target_column_button_clicked']:
@@ -932,7 +932,7 @@ with tab2:
                         # regresja = typ numeryczny (gdzie liczba wartości unikalnych >10)
     
                         if not st.session_state['go_to_generate_ai_technology_button_clicked']:
-                            st.button('Przejdź do zastosowania technologii AI', on_click = functional_button_click, args=('go_to_generate_ai_technology_button_clicked', ), use_container_width=True)
+                            st.button('Przejdź do zastosowania technologii AI ', on_click = functional_button_click, args=('go_to_generate_ai_technology_button_clicked', ), use_container_width=True)
 
                         if st.session_state['go_to_generate_ai_technology_button_clicked']:
 
@@ -963,7 +963,7 @@ with tab2:
                                 st.session_state['regression'] = False 
                             
                             if not st.session_state['generate_data_button_clicked']:
-                                st.button('Generuj dane', on_click= functional_button_click, args=('generate_data_button_clicked', ), use_container_width=True)
+                                st.button('Generuj dane ', on_click= functional_button_click, args=('generate_data_button_clicked', ), use_container_width=True)
                             
                         
                             # lista sucharów dla umilenia czasu oczekiwania na model :)
