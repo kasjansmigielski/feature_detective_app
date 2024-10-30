@@ -1,7 +1,7 @@
 import streamlit as st
 from pycaret.datasets import get_data
 from pycaret.regression import setup as reg_setup, compare_models as reg_compare_models, finalize_model as reg_finalize_model, predict_model as reg_predict_model, plot_model as reg_plot_model, save_model as reg_save_model
-from pycaret.classification import setup as cls_setup, compare_models as cls_compare_models, finalize_model as cls_finalize_model, predict_model as cls_predict_model, plot_model as cls_plot_model, save_model as cls_save_model
+from pycaret.classification import setup as cls_setup, create_model as cls_create_model, compare_models as cls_compare_models, finalize_model as cls_finalize_model, predict_model as cls_predict_model, plot_model as cls_plot_model, save_model as cls_save_model
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
@@ -340,16 +340,18 @@ Rekomendacje wygeneruj na podstawie wygnerowanego opisu wykresu:
 
     return result['content']
 
-
 # inicjalizacja zmiennych w pamięci podręcznej
+
 if 'regression' not in st.session_state:
     st.session_state['regression'] = False
 if 'classification' not in st.session_state:
     st.session_state['classification'] = False
 if 'upload_file' not in st.session_state:
-    st.session_state['upload_file'] = False
+    st.session_state['upload_file'] = None
+if 'selected_dataset' not in st.session_state:
+    st.session_state['selected_dataset'] = None
 
-# incjalizacja przycisków funkcyjnych
+# przyciski funkcyjne
 if 'go_to_target_column_button_clicked' not in st.session_state:
     st.session_state['go_to_target_column_button_clicked'] = False
 
@@ -428,10 +430,15 @@ tab1, tab2 = st.tabs(['Wczytywanie danych', 'Pobieranie danych'])
 # wczytywanie danych
 with tab1:
 
-    if not 'upload_file' in st.session_state:
-        st.session_state['upload_file'] = None
-
     upload_file = st.file_uploader('Wybierz plik CSV lub JSON, który chcesz przeanalizować')
+
+    # reset przy ładowaniu nowego pliku
+    if upload_file is not None and upload_file != st.session_state['upload_file']:
+        st.session_state['upload_file'] = upload_file
+        st.session_state['choice_method'] = 'select_option'
+        st.session_state['go_to_target_column_button_clicked'] = False
+        st.session_state['go_to_generate_ai_technology_button_clicked'] = False
+        st.session_state['generate_data_button_clicked'] = False
 
     # jeżeli wczytano plik
     if upload_file is not None:
@@ -514,18 +521,22 @@ with tab1:
                         
                         if st.session_state['choice_method'] == 'select_option':
 
+                            st.session_state['go_to_generate_ai_technology_button_clicked'] = False
+                           
                             col1, col2 = st.columns(2)
 
                             with col1:
 
                                 if st.button('Automatyczny wybór', use_container_width=True, help='AI zdecyduje za Ciebie'):
                                     st.session_state['choice_method'] = 'automatic'
+                                    st.session_state['generate_data_button_clicked'] = False
                                     st.rerun()
                                 
                             with col2:
                                 
                                 if st.button('Wybór użytkownika', use_container_width=True, help='Decyzja należy do Ciebie'):
                                     st.session_state['choice_method'] = 'manual'
+                                    st.session_state['generate_data_button_clicked'] = False
                                     st.rerun()
                     
                         elif st.session_state['choice_method'] in ['automatic', 'manual']:
@@ -546,6 +557,8 @@ with tab1:
                                 if target_choice != st.session_state['target_choice']:
 
                                     st.session_state['target_choice'] = target_choice
+                                    st.session_state['go_to_generate_ai_technology_button_clicked'] = False
+                                    st.session_state['generate_data_button_clicked'] = False
                                     
                                     # wyświetlenie informacji jaką kolumnę wybrał użytkownik - trwające przez 3 sek (jako potwierdzenie wyboru kolumny)
                                     success_message_container = st.empty()
@@ -641,7 +654,7 @@ with tab1:
                                         #
 
                                         #
-                                        # auto ML - klasyfikacja
+                                        # auto ML - klasyfikacja (wczytywanie danych)
                                         #
 
                                         if st.session_state['classification']:
@@ -661,7 +674,7 @@ with tab1:
                                             else:
                                                 
                                                 # konfiguracja
-                                                cls_setup(data=df, target=st.session_state['target_choice'], session_id=123)
+                                                cls_setup(data=df, target=st.session_state['target_choice'], session_id=123,)
                                                 
                                                 joke_placeholder = st.empty()
 
@@ -671,73 +684,61 @@ with tab1:
                                                     joke_placeholder.text(random.choice(jokes))
                                                     
                                                     # znalezienie najlepszego modelu - z wykluczeniem NIEobsługujących wykresu 'feature' !!
-                                                    best_classify_model = cls_compare_models(exclude=['knn', 'svm', 'gpc', 'nb'])
+                                                    cls_models_name = ['dt', 'rf', 'gbc', 'et', 'ada', 'lightgbm']
+                                                    best_classify_model = cls_compare_models(include=cls_models_name, )
                                                 
                                                 joke_placeholder.empty()
 
                                             # sprawdzenie czy znaleziony BEST MODEL posiada możliwość generowania wykresu funkcji
                                             if hasattr(best_classify_model, 'coef_') or hasattr(best_classify_model, 'feature_importances_'):
+                                            
+                                                # wyciągnięcie istotności cech z atrybutu "feature_importantes_"
+                                                cls_feature_importances = best_classify_model.feature_importances_
+                                                cls_feature_names = df.drop(columns=st.session_state['target_choice']).columns  # wyciągnięcie nazw kolumn
+
+                                                # stworzenie DF dla lepszej czytelności
+                                                cls_importance_df = pd.DataFrame({
+                                                    'Feature': cls_feature_names,
+                                                    'Importance': cls_feature_importances
+                                                }).sort_values(by='Importance', ascending=False).rename(columns={
+                                                    'Feature' : 'Cecha',
+                                                    'Importance' : 'Istotność cechy'
+                                                })
+
+                                                # Plotting feature importances
+                                                plt.figure(figsize=(10, 6))
+                                                plt.barh(cls_importance_df['Cecha'], cls_importance_df['Istotność cechy'], color='skyblue')
+                                                plt.xlabel('Cecha')
+                                                plt.title('Najbardziej znaczące cechy')
+                                                plt.gca().invert_yaxis()  # ddwrócenie osi Y, aby pokazać najważniejszą cechę na górze
+
+                                                # zapisanie wykresu do BytesIO buffer
+                                                buffer = BytesIO()
+                                                plt.savefig(buffer, format='png')
+                                                buffer.seek(0)
+
+                                                # wyświetlenie wykresu w Streamlit
+                                                st.image(buffer, caption="Feature Importance Plot", use_column_width=True)
+
                                                 
-                                                cls_plot_model(best_classify_model, plot='feature', save=True, verbose= False)
-                                                with open('Feature Importance.png', 'rb') as f:
-                                                    st.session_state['feature_importance'] = f.read()
 
-                                                st.image(st.session_state['feature_importance'])
-                                                
-                                                st.stop()
-
-                                                # # Zakładamy, że model jest już utworzony i dostępny jako `model`
-                                                # def generate_feature_importance():
-                                                #     cls_plot_model(best_classify_model, plot='feature', save=True, verbose=False)
-
-                                                # # Generuj wykres i zapisuj go jako PNG
-                                                # generate_feature_importance()
-
-                                                # # Otwórz plik PNG i wczytaj jego zawartość
-                                                # with open("Feature Importance.png", "rb") as file:
-                                                #     btn = st.download_button(
-                                                #         label="Pobierz Feature Importance",
-                                                #         data=file,
-                                                #         file_name="Feature_Importance.png",
-                                                #         mime="image/png"
-                                                #         #test
-                                                #     )
-                                                # st.image('Feature Importance.png')
-                                                
-                                                # # wygenerowanie wykresu istotności cech
                                                 # cls_plot_model(best_classify_model, plot='feature', save=True)
+                                                # PLOT_NAME = 'Feature Importance.png'
+                                                # if os.path.exists(PLOT_NAME):
+                                                #     with open(PLOT_NAME, 'rb') as f:
+                                                #         st.session_state['feature_importance'] = f.read()
 
-                                                # # zapisanie wykresu do lokalnej zmiennej
-                                                # local_plot_path = 'Feature Importance.png'
-                                                
-                                                # # wykorzystanie buffora do wyświetlenia wykresu
-                                                # with open(local_plot_path, 'rb') as f:
-                                                #     buf = io.BytesIO(f.read())
-                                                # #st.image(buf)
-                                                # # buf = io.BytesIO()
-                                                # # plt.savefig(buf, format='png')
-                                                # # buf.seek(0)
-                                                # #if not cls_plot.empty:
-                                                # client.put_object(Bucket=BUCKET_NAME, Key=f'{CLS_PLOT_FOLDER_NAME}{PLOT_NAME}', Body=buf)
-                                                
-                                                # response = client.get_object(Bucket=BUCKET_NAME, Key=f'{CLS_PLOT_FOLDER_NAME}{PLOT_NAME}')
-                                                # plot_data = response['Body'].read()
-
-                                                # st.image(io.BytesIO(plot_data), use_column_width=True)
-
-                                    
-
-                          
+                                                #     st.image(st.session_state['feature_importance'])
 
                                                 # else:
-                                                #     st.error('Wykres nie został odnaleziony.')
+                                                #     st.error('Wykres nie istnieje!')
+                    
                                             else:
                                                 st.error(
-                                                'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
-                                                
+                                                'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')             
                                         
                                         #
-                                        # autoML - model regresji
+                                        # autoML - model regresji (wczytywanie danych)
                                         #
 
                                         elif st.session_state['regression']:
@@ -759,33 +760,22 @@ with tab1:
 
                                             # sprawdzenie czy znaleziony BEST MODEL posiada możliwość generowania wykresu funkcji
                                             if hasattr(best_regress_model, 'coef_') or hasattr(best_regress_model, 'feature_importances_'):
-                                                
-                                                # korzystam z tymczasowej zmiennej zeby obluzyc dzialanie z Digital Ocean App
-                                                with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                                                    plot_file_path = tmp_file.name
-
-                                                # Wygeneruj i zapisz wykres
+                                            
                                                 reg_plot_model(best_regress_model, plot='feature', save=True)
-                                                os.rename('Feature Importance.png', plot_file_path)
+                                                PLOT_NAME = 'Feature Importance.png'
+                                                if os.path.exists(PLOT_NAME):
+                                                    with open(PLOT_NAME, 'rb') as f:
+                                                        st.session_state['feature_importance'] = f.read()
 
-                                                # Wyświetl wykres w Streamlit
-                                                st.image(plot_file_path, use_column_width=True)
+                                                    st.image(st.session_state['feature_importance'])
 
-                                                # Opis wykresu
-                                                st.markdown('#### Opis wykresu:')
-                                                reg_description = describe_plot(plot_file_path)
-                                                st.write(reg_description)
+                                                else:
+                                                    st.error('Wykres nie istnieje!')
 
-                                                # Rekomendacje
-                                                st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
-                                                st.write(generate_recommendations(reg_description))
-
-                                                # Usuń plik tymczasowy
-                                                os.remove(plot_file_path)
-                                                
                                             else:
                                                 st.error(
-                                                    'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
+                                                'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
+
 
             # przypadek, gdy plik CSV jest pusty
             except pd.errors.EmptyDataError:
@@ -806,15 +796,21 @@ with tab1:
 with tab2:
 
     datasets = get_dataset_names()
-    selected_dataset = st.selectbox("Wybierz dataset", ['Wybierz z listy'] + datasets)
+    selected_dataset = st.selectbox("Wybierz zbiór danych", ['Wybierz z listy'] + datasets)
+
+    # reset przy pobieraniu nowego pliku
+    if selected_dataset is not None and selected_dataset != st.session_state['selected_dataset']:
+        st.session_state['selected_dataset'] = selected_dataset
+        st.session_state['choice_method'] = 'select_option'
+        st.session_state['go_to_target_column_button_clicked'] = False
+        st.session_state['go_to_generate_ai_technology_button_clicked'] = False
+        st.session_state['generate_data_button_clicked'] = False
 
     if selected_dataset != 'Wybierz z listy':
 
         try:
-            data_url = f's3://{BUCKET_NAME}/{FOLDER_NAME}{selected_dataset}.csv'
+            data_url = f's3://{BUCKET_NAME}/{FOLDER_NAME}{st.session_state["selected_dataset"]}.csv'
             ready_df = pd.read_csv(data_url, sep=',')
-            st.session_state['upload_file'] = ready_df
-            #st.write(f"Wybrano dataset: {selected_dataset}")
             st.markdown('#### Przykładowe 5 rekordów z wczytanego zbioru danych')
             sample_ready_df = ready_df.sample(5, random_state=123)
             st.dataframe(sample_ready_df, use_container_width=True, hide_index=True)
@@ -860,18 +856,22 @@ with tab2:
                 
                 if st.session_state['choice_method'] == 'select_option':
 
+                    st.session_state['go_to_generate_ai_technology_button_clicked'] = False
+
                     col1, col2 = st.columns(2)
 
                     with col1:
 
                         if st.button('Automatyczny wybór ', use_container_width=True, help='AI zdecyduje za Ciebie'):
                             st.session_state['choice_method'] = 'automatic'
+                            st.session_state['generate_data_button_clicked'] = False
                             st.rerun()
                         
                     with col2:
                         
                         if st.button('Wybór użytkownika ', use_container_width=True, help='Decyzja należy do Ciebie'):
                             st.session_state['choice_method'] = 'manual'
+                            st.session_state['generate_data_button_clicked'] = False
                             st.rerun()
             
                 elif st.session_state['choice_method'] in ['automatic', 'manual']:
@@ -887,11 +887,13 @@ with tab2:
                     elif st.session_state['choice_method'] == 'manual':
                         if 'target_choice' not in st.session_state:
                             st.session_state['target_choice'] = columns_names[0]
-                        target_choice = st.selectbox('Wybierz docelową kolumnę', columns_names)
+                        target_choice = st.selectbox('Wybierz docelową kolumnę ', columns_names)
                         
                         if target_choice != st.session_state['target_choice']:
 
                             st.session_state['target_choice'] = target_choice
+                            st.session_state['go_to_generate_ai_technology_button_clicked'] = False
+                            st.session_state['generate_data_button_clicked'] = False
                             
                             # wyświetlenie informacji jaką kolumnę wybrał użytkownik - trwające przez 3 sek (jako potwierdzenie wyboru kolumny)
                             success_message_container = st.empty()
@@ -987,7 +989,7 @@ with tab2:
                                 #
 
                                 #
-                                # auto ML - klasyfikacja
+                                # auto ML - klasyfikacja (wybór użytkownika)
                                 #
 
                                 if st.session_state['classification']:
@@ -1002,7 +1004,6 @@ with tab2:
                                             st.markdown(
                                             '<span style="color: red;">W tej kolumnie znajduje się minimum jedna dana, która posiada tylko jednego przedstawiciela. Co to oznacza w praktyce?</span> <br><br>Wyobraź sobie, że uczysz się rozpoznawać różne rodzaje owoców patrząc na przykłady i porównując je. Jeśli masz do nauki tylko jedno jabłko i właśnie to jedno musisz zapamiętać jako przykład jabłka, może być trudno rozpoznać inne jabłka, które wyglądają choćby odrobinę inaczej.<br><br>Podobnie jest z modelami klasyfikacji w analizie danych. Modele te "uczą się", jakie cechy odróżniają jedną klasę od drugiej, analizując wiele przykładów z każdej klasy. Jeśli masz tylko jeden przykład z danej klasy, model nie ma wystarczająco dużo informacji, aby dobrze nauczyć się, jak rozróżniać tę klasę od innych. Bez większej liczby przykładów, istnieje ryzyko, że model błędnie sklasyfikuje rzeczy, które nie są do końca takie same, albo że zignoruje tę klasę całkowicie w przyszłych przewidywaniach. To tak, jakby ucząc się tylko z jednego jabłka, można było przeoczyć fakt, że jabłka mogą być również zielone czy większe niż to jedno, które widzisz.',
                                             unsafe_allow_html=True)
-                                        st.stop()
 
                                     else:
                                         
@@ -1023,43 +1024,21 @@ with tab2:
 
                                     # sprawdzenie czy znaleziony BEST MODEL posiada możliwość generowania wykresu funkcji
                                     if hasattr(best_classify_model, 'coef_') or hasattr(best_classify_model, 'feature_importances_'):
-
-                                    
                                         
-                                        cls_plot_model(best_classify_model, plot='feature', save=True, verbose= False)
-                                        with open('Feature Importance.png', 'rb') as f:
-                                            st.session_state['feature_importance'] = f.read()
+                                        cls_plot_model(best_classify_model, plot='feature', save=True)
+                                        PLOT_NAME = 'Feature Importance.png'
+                                        if os.path.exists(PLOT_NAME):
+                                            with open(PLOT_NAME, 'rb') as f:
+                                                st.session_state['feature_importance'] = f.read()
 
-                                        st.image(st.session_state['feature_importance'])
-                                        
-                                        st.stop()
-                                        
-                                        # # korzystam z tymczasowej zmiennej zeby obluzyc dzialanie z Digital Ocean App
-                                        # with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                                        #             plot_file_path = tmp_file.name
+                                            st.image(st.session_state['feature_importance'])
 
-                                        # # Wygeneruj i zapisz wykres
-                                        # cls_plot_model(best_classify_model, plot='feature', save=True)
-                                        # os.rename('Feature Importance.png', plot_file_path)
-
-                                        # # Wyświetl wykres w Streamlit
-                                        # st.image(plot_file_path, use_column_width=True)
-
-                                        # # Opis wykresu
-                                        # st.markdown('#### Opis wykresu:')
-                                        # cls_description = describe_plot(plot_file_path)
-                                        # st.write(cls_description)
-
-                                        # # Rekomendacje
-                                        # st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
-                                        # st.write(generate_recommendations(cls_description))
-
-                                        # # Usuń plik tymczasowy
-                                        # os.remove(plot_file_path)
-
+                                        else:
+                                            st.error('Wykres nie istnieje!')
+            
                                     else:
                                         st.error(
-                                        'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
+                                        'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')     
 
                                 #
                                 # autoML - model regresji
@@ -1084,34 +1063,22 @@ with tab2:
 
                                     # sprawdzenie czy znaleziony BEST MODEL posiada możliwość generowania wykresu funkcji
                                     if hasattr(best_regress_model, 'coef_') or hasattr(best_regress_model, 'feature_importances_'):
-                                        
-                                        # korzystam z tymczasowej zmiennej zeby obluzyc dzialanie z Digital Ocean App
-                                        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-                                                    plot_file_path = tmp_file.name
-
-                                        # Wygeneruj i zapisz wykres
+                                                
                                         reg_plot_model(best_regress_model, plot='feature', save=True)
-                                        os.rename('Feature Importance.png', plot_file_path)
+                                        PLOT_NAME = 'Feature Importance.png'
+                                        if os.path.exists(PLOT_NAME):
+                                            with open(PLOT_NAME, 'rb') as f:
+                                                st.session_state['feature_importance'] = f.read()
 
-                                        # Wyświetl wykres w Streamlit
-                                        st.image(plot_file_path, use_column_width=True)
+                                            st.image(st.session_state['feature_importance'])
 
-                                        # Opis wykresu
-                                        st.markdown('#### Opis wykresu:')
-                                        reg_description = describe_plot(plot_file_path)
-                                        st.write(reg_description)
-
-                                        # Rekomendacje
-                                        st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
-                                        st.write(generate_recommendations(reg_description))
-
-                                        # Usuń plik tymczasowy
-                                        os.remove(plot_file_path)
-
+                                        else:
+                                            st.error('Wykres nie istnieje!')
+            
                                     else:
                                         st.error(
-                                            'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
-
+                                        'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')    
+                       
         # przypadek, gdy plik CSV jest pusty
         except pd.errors.EmptyDataError:
             st.error('Wczytany plik wydaje się być pusty. Spróbuj wgrać inny plik!')
