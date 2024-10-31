@@ -238,7 +238,7 @@ def list_columns_info(column_names: List[str]) -> List[Dict]:
 #
 
 # funkcja przygotowująca obraz do formatu binarnego rozumianego przez LLM
-def prepare_image_for_llm(image_path):
+def prepare_image_for_llm(_image_path):
     with open(image_path, 'rb') as f:
         image_data = base64.b64encode(f.read()).decode('utf-8')
     return f'data:image/png;base64,{image_data}'
@@ -246,7 +246,7 @@ def prepare_image_for_llm(image_path):
 # funkcja generująca opis wykresu przez LLM - z dekoratorem + KOSZTY + dekorator
 @observe()
 @st.cache_data
-def describe_plot(image_path):
+def describe_plot(_image_path):
     res = openai_client.chat.completions.create(
         model=st.session_state['model'],
         temperature=0,
@@ -261,7 +261,7 @@ def describe_plot(image_path):
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": prepare_image_for_llm(image_path),
+                            "url": prepare_image_for_llm(_image_path),
                             "detail": "high"
                         },
                     },
@@ -712,26 +712,34 @@ with tab1:
                                                 plt.title('Najbardziej znaczące cechy')
                                                 plt.gca().invert_yaxis()  # ddwrócenie osi Y, aby pokazać najważniejszą cechę na górze
 
-                                                # zapisanie wykresu do BytesIO buffer
-                                                buffer = BytesIO()
-                                                plt.savefig(buffer, format='png')
-                                                buffer.seek(0)
+                                                # Zapisanie wykresu do pliku PNG
+                                                image_path = "feature_importances.png"
+                                                plt.savefig(image_path, format='png')
 
-                                                # wyświetlenie wykresu w Streamlit
-                                                st.image(buffer, caption="Feature Importance Plot", use_column_width=True)
-
+                                                # Wyświetlenie wykresu w Streamlit
+                                                with open(image_path, "rb") as img_file:
+                                                    cls_plot = st.image(img_file.read(), caption="Feature Importance Plot", use_column_width=True)
                                                 
+                                                # # zapisanie wykresu do BytesIO buffer
+                                                # buffer = BytesIO()
+                                                # plt.savefig(buffer, format='png')
+                                                # buffer.seek(0)
 
-                                                # cls_plot_model(best_classify_model, plot='feature', save=True)
-                                                # PLOT_NAME = 'Feature Importance.png'
-                                                # if os.path.exists(PLOT_NAME):
-                                                #     with open(PLOT_NAME, 'rb') as f:
-                                                #         st.session_state['feature_importance'] = f.read()
+                                                # # wyświetlenie wykresu w Streamlit
+                                                # cls_plot = st.image(buffer, caption="Feature Importance Plot", use_column_width=True)
+                                       
+                                                # wygenerowanie opisu wykresu za pomocą LLM (dane odczytane z wykresu)
+                                                if cls_plot:
+                                                    st.markdown('#### Opis wykresu:')
+                                                    cls_description = describe_plot(cls_plot)
+                                                    # wyświetlenie opisu wykresu
+                                                    st.write(cls_description)
 
-                                                #     st.image(st.session_state['feature_importance'])
-
-                                                # else:
-                                                #     st.error('Wykres nie istnieje!')
+                                                # wygenerowanie rekomendacji dla klienta za pomocą LLM (dane odczytane z opisu)
+                                                if cls_description:
+                                                    st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
+                                                    # wyświetlenie rekomendacji
+                                                    st.write(generate_recommendations(cls_description))
                     
                                             else:
                                                 st.error(
