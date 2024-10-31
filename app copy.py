@@ -325,6 +325,142 @@ def describe_plot(image_path):
 
     return result['content']
 
+
+# # funkcja przygotowująca obraz do formatu binarnego rozumianego przez LLM
+# def prepare_image_for_llm(_image_path):
+#     with open(_image_path, 'rb') as f:
+#         image_data = base64.b64encode(f.read()).decode('utf-8')
+#     return f'data:image/png;base64,{image_data}'
+
+
+
+# # funkcja przygotowująca obraz do formatu binarnego rozumianego przez LLM
+# def prepare_image_for_llm(image_bytes):
+
+#     image_data = base64.b64encode(image_bytes).decode('utf-8')
+    
+#     return f'data:image/png;base64,{image_data}'
+
+# # funkcja generująca opis wykresu przez LLM - z dekoratorem + KOSZTY + dekorator
+# @observe()
+# @st.cache_data
+# def describe_plot(_image_buffer):
+#     try:
+#         image_bytes = _image_buffer.getvalue()
+#         image_url = prepare_image_for_llm(image_bytes)
+    
+#         res = openai_client.chat.completions.create(
+#             model=st.session_state['model'],
+#             temperature=0,
+#             messages=[
+#                 {
+#                     "role": "user",
+#                     "content": [
+#                         {
+#                             "type": "text",
+#                             "text": "Stwórz konkretny opis obrazka, skup się głównie na opisaniu trzech najważniejszych cech. Opis wygeneruj tak jakby adresatem była osoba NIETECHNICZNA i dodaj na początku jedno zdanie ogólne na temat wykresu (czego dotyczą osie, co w skrócie przedstawia wykres)"
+#                         },
+#                         {
+#                             "type": "image_url",
+#                             "image_url": {
+#                                 "url" : image_url,
+#                                 #"url": prepare_image_for_llm(_image_path),
+#                                 "detail": "high"
+#                             },
+#                         },
+#                     ],
+#                 }
+#             ],
+#         )
+
+#         usage = {}
+#         if res.usage:
+#             usage = {
+#                 'completion_tokens': res.usage.completion_tokens,
+#                 'prompt_tokens': res.usage.prompt_tokens,
+#                 'total_tokens': res.usage.total_tokens,
+#             }
+
+#         result = {
+#             'content': res.choices[0].message.content,
+#             'usage': usage,
+#         }
+
+#         if 'llm_messages' not in st.session_state:
+#             st.session_state['llm_messages'] = []
+#         st.session_state['llm_messages'].append(result)
+
+#         return result['content']
+
+#     except Exception as e:
+#         st.error(f'Błąd przy generowaniu opius: {e}')
+#         return None
+
+
+
+# # # funkcja przygotowująca obraz do formatu binarnego rozumianego przez LLM
+# def prepare_image_for_llm(_image_bytes):
+
+#     image_data = base64.b64encode(_image_bytes).decode('utf-8')
+
+#     return f'data:image/png;base64,{image_data}'
+
+# # funkcja generująca opis wykresu przez LLM - z dekoratorem + KOSZTY + dekorator
+# @observe()
+# @st.cache_data
+# def describe_plot(_image_plot):
+
+#     try:
+#         image_bytes = image_buffer.getvalue()
+#         image_url = prepare_image_for_llm(image_bytes)
+    
+#         res = openai_client.chat.completions.create(
+#             model=st.session_state['model'],
+#             temperature=0,
+#             messages=[
+#                 {
+#                     "role": "user",
+#                     "content": [
+#                         {
+#                             "type": "text",
+#                             "text": "Stwórz konkretny opis obrazka, skup się głównie na opisaniu trzech najważniejszych cech. Opis wygeneruj tak jakby adresatem była osoba NIETECHNICZNA i dodaj na początku jedno zdanie ogólne na temat wykresu (czego dotyczą osie, co w skrócie przedstawia wykres)"
+#                         },
+#                         {
+#                             "type": "image_url",
+#                             "image_url": {
+#                                 "url" : image_url,
+#                                 #"url": prepare_image_for_llm(_image_path),
+#                                 "detail": "high"
+#                             },
+#                         },
+#                     ],
+#                 }
+#             ],
+#         )
+
+#         usage = {}
+#         if res.usage:
+#             usage = {
+#                 'completion_tokens': res.usage.completion_tokens,
+#                 'prompt_tokens': res.usage.prompt_tokens,
+#                 'total_tokens': res.usage.total_tokens,
+#             }
+
+#         result = {
+#             'content': res.choices[0].message.content,
+#             'usage': usage,
+#         }
+
+#         if 'llm_messages' not in st.session_state:
+#             st.session_state['llm_messages'] = []
+#         st.session_state['llm_messages'].append(result)
+
+#         return result['content']
+
+#     except Exception as e:
+#         st.error(f'Błąd przy generowaniu opisu: {e}')
+#         return None
+
 #
 # konfiguracja 4. LLM (text -> text)
 #
@@ -761,6 +897,43 @@ with tab1:
                                                 'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
                                             
 
+
+                                            #     cls_plot_model(best_classify_model, plot='feature', save=True)
+                                            #     PLOT_NAME = 'Feature Importance.png'
+
+                                            #     if os.path.exists(PLOT_NAME):
+                                            #         with open(PLOT_NAME, 'rb') as f:
+                                            #             st.session_state['feature_importance'] = f.read()
+
+                                                    
+
+                                            #         # wyświetlenie wykresu
+                                            #         cls_plot = st.image(st.session_state['feature_importance'])
+
+                                            #         # wygenerowanie opisu wykresu za pomocą LLM (dane odczytane z wykresu)
+                                            #         if cls_plot:
+                                            #             st.markdown('#### Opis wykresu:')
+                                            #             cls_description = describe_plot(cls_plot)
+                                            #             # wyświetlenie opisu wykresu
+                                            #             st.write(cls_description)
+                                                    
+                                            #         else:
+                                            #             st.error('Nastąpił bląd z wygenerowaniem opisu wykresu.  Zmień kolumnę docelową lub wczytaj inny zbiór danych i spróbuj ponownie.')
+
+                                            #         # wygenerowanie rekomendacji dla klienta za pomocą LLM (dane odczytane z opisu)
+                                            #         if cls_description:
+                                            #             st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
+                                            #             # wyświetlenie rekomendacji
+                                            #             st.write(generate_recommendations(cls_description))
+                                                
+
+                                            #     else:
+                                            #         st.error('Nastąpił błąd z wygenerowaniem wykresu.  Zmień kolumnę docelową lub wczytaj inny zbiór danych i spróbuj ponownie.')
+
+                                            # else:
+                                            #     st.error(
+                                            #     'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')              
+                                        
                                         #
                                         # autoML - model regresji (wczytywanie danych)
                                         #
@@ -818,6 +991,40 @@ with tab1:
                                                 st.error(
                                                 'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
                                             
+                                            
+                                            #     reg_plot_model(best_regress_model, plot='feature', save=True)
+                                            #     PLOT_NAME = 'Feature Importance.png'
+                                            #     if os.path.exists(PLOT_NAME):
+                                            #         with open(PLOT_NAME, 'rb') as f:
+                                            #             st.session_state['feature_importance'] = f.read()
+
+                                            #         # wyświetlenie wykresu
+                                            #         reg_plot = st.image(st.session_state['feature_importance'])
+
+                                            #         # wygenerowanie opisu wykresu za pomocą LLM (dane odczytane z wykresu)
+                                            #         if reg_plot:
+                                            #             st.markdown('#### Opis wykresu:')
+                                            #             reg_description = describe_plot(reg_plot)
+                                            #             # wyświetlenie opisu wykresu
+                                            #             st.write(reg_description)
+                                                    
+                                            #         else:
+                                            #             st.error('Nastąpił bląd z wygenerowaniem opisu wykresu.  Zmień kolumnę docelową lub wczytaj inny zbiór danych i spróbuj ponownie.')
+                                                                 
+                                            #         # wygenerowanie rekomendacji dla klienta za pomocą LLM (dane odczytane z opisu)
+                                            #         if reg_description:
+                                            #             st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
+                                            #             # wyświetlenie rekomendacji
+                                            #             st.write(generate_recommendations(reg_description))
+                                                
+
+                                            #     else:
+                                            #         st.error('Nastąpił błąd z wygenerowaniem wykresu.  Zmień kolumnę docelową lub wczytaj inny zbiór danych i spróbuj ponownie.')
+
+                                            # else:
+                                            #     st.error(
+                                            #     'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
+
 
             # przypadek, gdy plik CSV jest pusty
             except pd.errors.EmptyDataError:
@@ -1159,6 +1366,39 @@ with tab2:
                                         st.error(
                                         'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
                                     
+                                    #     reg_plot_model(best_regress_model, plot='feature', save=True)
+                                    #     PLOT_NAME = 'Feature Importance.png'
+
+                                    #     if os.path.exists(PLOT_NAME):
+                                    #         with open(PLOT_NAME, 'rb') as f:
+                                    #             st.session_state['feature_importance'] = f.read()
+
+                                    #         # wyświetlenie wykresu
+                                    #         reg_plot = st.image(st.session_state['feature_importance'])
+
+                                    #         # wygenerowanie opisu wykresu za pomocą LLM (dane odczytane z wykresu)
+                                    #         if reg_plot:
+                                    #             st.markdown('#### Opis wykresu:')
+                                    #             reg_description = describe_plot(reg_plot)
+                                    #             # wyświetlenie opisu wykresu
+                                    #             st.write(reg_description)
+                                            
+                                    #         else:
+                                    #             st.error('Nastąpił bląd z wygenerowaniem opisu wykresu.  Zmień kolumnę docelową lub wczytaj inny zbiór danych i spróbuj ponownie.')
+
+                                    #         # wygenerowanie rekomendacji dla klienta za pomocą LLM (dane odczytane z opisu)
+                                    #         if reg_description:
+                                    #             st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
+                                    #             # wyświetlenie rekomendacji
+                                    #             st.write(generate_recommendations(reg_description))
+                                        
+
+                                    #     else:
+                                    #         st.error('Nastąpił błąd z wygenerowaniem wykresu. Zmień kolumnę docelową lub wczytaj inny zbiór danych i spróbuj ponownie.')
+
+                                    # else:
+                                    #     st.error(
+                                    #     'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')   
                        
         # przypadek, gdy plik CSV jest pusty
         except pd.errors.EmptyDataError:
