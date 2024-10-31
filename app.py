@@ -1062,8 +1062,8 @@ with tab2:
                                             # best_classify_model = cls_compare_models(exclude=['knn', 'svm', 'gpc', 'nb'])
                                             
                                             # nowa metoda - wybranie najbardziej uniwersalnych model: RandomForestClassifier (rf) dla malych zbiorow danych / LogisticRegression (lr) dla duzych zbiorow danych    
-                                            #best_classify_model = cls_create_model('rf')
-                                            best_classify_model = cls_compare_models(exclude=['rf', 'lr'], fold=10)
+                                            best_classify_model = cls_create_model('rf')
+                                            #best_classify_model = cls_compare_models(exclude=['rf', 'lr'], fold=10)
                                         
                                         joke_placeholder.empty()
 
@@ -1122,8 +1122,8 @@ with tab2:
                                         # best_regress_model = reg_compare_models(exclude=['knn', 'svm', 'gpc', 'nb'])
                                             
                                         # nowa metoda - wybranie najbardziej uniwersalnych model: RandomForestRegressor (rf) dla malych zbiorow danych / LinearRegression (lr) dla duzych zbiorow danych    
-                                        # best_regress_model = reg_create_model('rf')
-                                        best_regress_model = reg_compare_models(exclude=['rf', 'lr'], fold=10)   
+                                        best_regress_model = reg_create_model('rf')
+                                        # best_regress_model = reg_compare_models(exclude=['rf', 'lr'], fold=10)   
                                         
                                     joke_placeholder.empty()
 
