@@ -237,57 +237,73 @@ def list_columns_info(column_names: List[str]) -> List[Dict]:
 # konfiguracja 3. LLM (image -> text)
 #
 
+# # funkcja przygotowująca obraz do formatu binarnego rozumianego przez LLM
+# def prepare_image_for_llm(_image_path):
+#     with open(_image_path, 'rb') as f:
+#         image_data = base64.b64encode(f.read()).decode('utf-8')
+#     return f'data:image/png;base64,{image_data}'
+
 # funkcja przygotowująca obraz do formatu binarnego rozumianego przez LLM
-def prepare_image_for_llm(_image_path):
-    with open(image_path, 'rb') as f:
-        image_data = base64.b64encode(f.read()).decode('utf-8')
+def prepare_image_for_llm(image_bytes):
+
+    image_data = base64.b64encode(image_bytes).decode('utf-8')
+    
     return f'data:image/png;base64,{image_data}'
 
 # funkcja generująca opis wykresu przez LLM - z dekoratorem + KOSZTY + dekorator
 @observe()
 @st.cache_data
-def describe_plot(_image_path):
-    res = openai_client.chat.completions.create(
-        model=st.session_state['model'],
-        temperature=0,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Stwórz opis obrazka, skup się głównie na opisaniu dwóch najważniejszych cech. Opis wygeneruj tak jakby adresatem była osoba NIETECHNICZNA i dodaj na początku jedno zdanie ogólne na temat wykresu (czego dotyczą osie, co w skrócie przedstawia wykres)"
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": prepare_image_for_llm(_image_path),
-                            "detail": "high"
+def describe_plot(image_buffer):
+    try:
+        image_bytes = image_buffer.getvalue()
+        image_url = prepare_image_for_llm(image_bytes)
+    
+        res = openai_client.chat.completions.create(
+            model=st.session_state['model'],
+            temperature=0,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "Stwórz opis obrazka, skup się głównie na opisaniu dwóch najważniejszych cech. Opis wygeneruj tak jakby adresatem była osoba NIETECHNICZNA i dodaj na początku jedno zdanie ogólne na temat wykresu (czego dotyczą osie, co w skrócie przedstawia wykres)"
                         },
-                    },
-                ],
-            }
-        ],
-    )
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url" : image_url,
+                                #"url": prepare_image_for_llm(_image_path),
+                                "detail": "high"
+                            },
+                        },
+                    ],
+                }
+            ],
+        )
 
-    usage = {}
-    if res.usage:
-        usage = {
-            'completion_tokens': res.usage.completion_tokens,
-            'prompt_tokens': res.usage.prompt_tokens,
-            'total_tokens': res.usage.total_tokens,
+        usage = {}
+        if res.usage:
+            usage = {
+                'completion_tokens': res.usage.completion_tokens,
+                'prompt_tokens': res.usage.prompt_tokens,
+                'total_tokens': res.usage.total_tokens,
+            }
+
+        result = {
+            'content': res.choices[0].message.content,
+            'usage': usage,
         }
 
-    result = {
-        'content': res.choices[0].message.content,
-        'usage': usage,
-    }
+        if 'llm_messages' not in st.session_state:
+            st.session_state['llm_messages'] = []
+        st.session_state['llm_messages'].append(result)
 
-    if 'llm_messages' not in st.session_state:
-        st.session_state['llm_messages'] = []
-    st.session_state['llm_messages'].append(result)
+        return result['content']
 
-    return result['content']
+    except Exception as e:
+        st.error(f'Błąd przy generowaniu opius: {e}')
+        return None
 
 #
 # konfiguracja 4. LLM (text -> text)
@@ -712,26 +728,27 @@ with tab1:
                                                 plt.title('Najbardziej znaczące cechy')
                                                 plt.gca().invert_yaxis()  # ddwrócenie osi Y, aby pokazać najważniejszą cechę na górze
 
-                                                # Zapisanie wykresu do pliku PNG
-                                                image_path = "feature_importances.png"
-                                                plt.savefig(image_path, format='png')
+                                                # # Zapisanie wykresu do pliku PNG
+                                                # image_path = "feature_importances.png"
+                                                # plt.savefig(image_path, format='png')
 
-                                                # Wyświetlenie wykresu w Streamlit
-                                                with open(image_path, "rb") as img_file:
-                                                    cls_plot = st.image(img_file.read(), caption="Feature Importance Plot", use_column_width=True)
+                                                # # Wyświetlenie wykresu w Streamlit
+                                                # with open(image_path, "rb") as img_file:
+                                                #     cls_plot = st.image(img_file.read(), caption="Feature Importance Plot", use_column_width=True)
                                                 
-                                                # # zapisanie wykresu do BytesIO buffer
-                                                # buffer = BytesIO()
-                                                # plt.savefig(buffer, format='png')
-                                                # buffer.seek(0)
+                                                # zapisanie wykresu do BytesIO buffer
+                                                buffer = BytesIO()
+                                                plt.savefig(buffer, format='png')
+                                                plt.close()
+                                                buffer.seek(0)
 
-                                                # # wyświetlenie wykresu w Streamlit
-                                                # cls_plot = st.image(buffer, caption="Feature Importance Plot", use_column_width=True)
+                                                # wyświetlenie wykresu w Streamlit
+                                                cls_plot = st.image(buffer, caption="Feature Importance Plot", use_column_width=True)
                                        
                                                 # wygenerowanie opisu wykresu za pomocą LLM (dane odczytane z wykresu)
                                                 if cls_plot:
                                                     st.markdown('#### Opis wykresu:')
-                                                    cls_description = describe_plot(cls_plot)
+                                                    cls_description = describe_plot(buffer)
                                                     # wyświetlenie opisu wykresu
                                                     st.write(cls_description)
 
