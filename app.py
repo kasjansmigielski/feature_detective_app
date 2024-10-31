@@ -779,7 +779,7 @@ with tab1:
                                                 joke_placeholder.text(random.choice(jokes))
                                                 
                                                 # znalezienie najlepszego modelu - z wykluczeniem NIEobsługujących wykresu 'feature' !!
-                                                best_regress_model = reg_compare_models(exclude=['knn', 'svm', 'gpc', 'nb'], fold=1)
+                                                best_regress_model = reg_compare_models(exclude=['knn', 'svm', 'gpc', 'nb'], fold=2)
                                                 
                                             joke_placeholder.empty()
 
