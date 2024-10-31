@@ -1,6 +1,6 @@
 import streamlit as st
 from pycaret.datasets import get_data
-from pycaret.regression import setup as reg_setup, compare_models as reg_compare_models, finalize_model as reg_finalize_model, predict_model as reg_predict_model, plot_model as reg_plot_model, save_model as reg_save_model
+from pycaret.regression import setup as reg_setup, create_model as reg_create_model, compare_models as reg_compare_models, finalize_model as reg_finalize_model, predict_model as reg_predict_model, plot_model as reg_plot_model, save_model as reg_save_model
 from pycaret.classification import setup as cls_setup, create_model as cls_create_model, compare_models as cls_compare_models, finalize_model as cls_finalize_model, predict_model as cls_predict_model, plot_model as cls_plot_model, save_model as cls_save_model
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -769,7 +769,7 @@ with tab1:
                                         elif st.session_state['regression']:
                                             
                                             # konfiguracja
-                                            reg_setup(data=df, target=st.session_state['target_choice'], session_id=123)
+                                            reg_setup(data=df, target=st.session_state['target_choice'], session_id=123, html=False)
                                         
                                             joke_placeholder = st.empty()
 
@@ -779,7 +779,8 @@ with tab1:
                                                 joke_placeholder.text(random.choice(jokes))
                                                 
                                                 # znalezienie najlepszego modelu - z wykluczeniem NIEobsługujących wykresu 'feature' !!
-                                                best_regress_model = reg_compare_models(exclude=['knn', 'svm', 'gpc', 'nb'], fold=2)
+                                                best_regress_model = reg_create_model('rf')
+                                                #best_regress_model = reg_compare_models(exclude=['knn', 'svm', 'gpc', 'nb'], fold=2)
                                                 
                                             joke_placeholder.empty()
 
