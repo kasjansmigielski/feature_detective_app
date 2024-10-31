@@ -267,7 +267,7 @@ def describe_plot(image_buffer):
                     "content": [
                         {
                             "type": "text",
-                            "text": "Stwórz opis obrazka, skup się głównie na opisaniu dwóch najważniejszych cech. Opis wygeneruj tak jakby adresatem była osoba NIETECHNICZNA i dodaj na początku jedno zdanie ogólne na temat wykresu (czego dotyczą osie, co w skrócie przedstawia wykres)"
+                            "text": "Stwórz konkretny opis obrazka, skup się głównie na opisaniu trzech najważniejszych cech. Opis wygeneruj tak jakby adresatem była osoba NIETECHNICZNA i dodaj na początku jedno zdanie ogólne na temat wykresu (czego dotyczą osie, co w skrócie przedstawia wykres)"
                         },
                         {
                             "type": "image_url",
@@ -1050,20 +1050,76 @@ with tab2:
                                     # sprawdzenie czy znaleziony BEST MODEL posiada możliwość generowania wykresu funkcji
                                     if hasattr(best_classify_model, 'coef_') or hasattr(best_classify_model, 'feature_importances_'):
                                         
-                                        cls_plot_model(best_classify_model, plot='feature', save=True)
-                                        PLOT_NAME = 'Feature Importance.png'
-                                        if os.path.exists(PLOT_NAME):
-                                            with open(PLOT_NAME, 'rb') as f:
-                                                st.session_state['feature_importance'] = f.read()
+                                    
+                                    # wyciągnięcie istotności cech z atrybutu "feature_importantes_"
+                                        cls_feature_importances = best_classify_model.feature_importances_
+                                        cls_feature_names = df.drop(columns=st.session_state['target_choice']).columns  # wyciągnięcie nazw kolumn
 
-                                            st.image(st.session_state['feature_importance'])
+                                        # stworzenie DF dla lepszej czytelności
+                                        cls_importance_df = pd.DataFrame({
+                                            'Feature': cls_feature_names,
+                                            'Importance': cls_feature_importances
+                                        }).sort_values(by='Importance', ascending=False).rename(columns={
+                                            'Feature' : 'Cecha',
+                                            'Importance' : 'Istotność cechy'
+                                        })
 
-                                        else:
-                                            st.error('Wykres nie istnieje!')
+                                        # Plotting feature importances
+                                        plt.figure(figsize=(10, 6))
+                                        plt.barh(cls_importance_df['Cecha'], cls_importance_df['Istotność cechy'], color='skyblue')
+                                        plt.xlabel('Cecha')
+                                        plt.title('Najbardziej znaczące cechy')
+                                        plt.gca().invert_yaxis()  # ddwrócenie osi Y, aby pokazać najważniejszą cechę na górze
+
+                                        # # Zapisanie wykresu do pliku PNG
+                                        # image_path = "feature_importances.png"
+                                        # plt.savefig(image_path, format='png')
+
+                                        # # Wyświetlenie wykresu w Streamlit
+                                        # with open(image_path, "rb") as img_file:
+                                        #     cls_plot = st.image(img_file.read(), caption="Feature Importance Plot", use_column_width=True)
+                                        
+                                        # zapisanie wykresu do BytesIO buffer
+                                        buffer = BytesIO()
+                                        plt.savefig(buffer, format='png')
+                                        plt.close()
+                                        buffer.seek(0)
+
+                                        # wyświetlenie wykresu w Streamlit
+                                        cls_plot = st.image(buffer, caption="Feature Importance Plot", use_column_width=True)
+                                
+                                        # wygenerowanie opisu wykresu za pomocą LLM (dane odczytane z wykresu)
+                                        if cls_plot:
+                                            st.markdown('#### Opis wykresu:')
+                                            cls_description = describe_plot(buffer)
+                                            # wyświetlenie opisu wykresu
+                                            st.write(cls_description)
+
+                                        # wygenerowanie rekomendacji dla klienta za pomocą LLM (dane odczytane z opisu)
+                                        if cls_description:
+                                            st.markdown('#### <span style="color: green;">Rekomendacje:</span>', unsafe_allow_html=True)
+                                            # wyświetlenie rekomendacji
+                                            st.write(generate_recommendations(cls_description))
             
                                     else:
                                         st.error(
-                                        'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')     
+                                        'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')             
+
+
+                                    #     cls_plot_model(best_classify_model, plot='feature', save=True)
+                                    #     PLOT_NAME = 'Feature Importance.png'
+                                    #     if os.path.exists(PLOT_NAME):
+                                    #         with open(PLOT_NAME, 'rb') as f:
+                                    #             st.session_state['feature_importance'] = f.read()
+
+                                    #         st.image(st.session_state['feature_importance'])
+
+                                    #     else:
+                                    #         st.error('Wykres nie istnieje!')
+            
+                                    # else:
+                                    #     st.error(
+                                    #     'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')     
 
                                 #
                                 # autoML - model regresji
