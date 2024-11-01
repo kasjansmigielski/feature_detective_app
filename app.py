@@ -21,7 +21,6 @@ import io
 from io import BytesIO
 import fsspec
 import s3fs
-import tempfile
 
 # ustawienia strony w aplikacji
 st.set_page_config(layout='wide')
@@ -140,6 +139,11 @@ with st.sidebar:
         mp3_file = get_mp3_file(BUCKET_NAME, MUSIC_FOLDER_NAME, file_name)
         # odtwarzacz muzyczny
         st.audio(BytesIO(mp3_file), format='audio/mp3')
+
+    # dodanie krotkiego info na temat odswiezania aplikacji
+    st.write('---')
+    with st.expander('Ważna informacja'):
+        st.markdown('##### Aplikacja przetwarza duże ilości danych, dlatego w razie wystąpienia problemów - <span style="color: red;">odśwież ją!</span>', unsafe_allow_html=True)
 
 #
 # konfiguracja 1. LLM (text -> JSON)
@@ -281,7 +285,7 @@ def prepare_image_for_llm(image_path):
 # funkcja generująca opis wykresu przez LLM - z dekoratorem + KOSZTY
 
 @observe()
-@st.cache_resource
+#@st.cache_resource
 def describe_plot(image_path):
     res = openai_client.chat.completions.create(
         model=st.session_state['model'],
@@ -331,7 +335,7 @@ def describe_plot(image_path):
 
 # funkcja generująca rekomendacje na podstawie opisu wykresu + KOSZTY + dekorator
 @observe()
-@st.cache_data
+#@st.cache_data
 def generate_recommendations(plot_description):
     
     prompt = f"""
@@ -759,7 +763,7 @@ with tab1:
                                             else:
                                                 st.error(
                                                 'Wygenerowanie wykresu istotności cech NIE jest możliwe dla tej kolumny. Zmień kolumnę docelową.')
-                                            
+     
 
                                         #
                                         # autoML - model regresji (wczytywanie danych)
