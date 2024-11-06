@@ -19,3 +19,7 @@ The aim of the project was to create a universal application that allows for det
 * instructor,
 * pydantic,
 * boto3.
+
+### Result:
+The application is publicly deployed at the link: https://feature-detective.streamlit.app/
+**To use it, an OpenAI API key is required.**
