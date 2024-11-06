@@ -21,5 +21,5 @@ The aim of the project was to create a universal application that allows for det
 * boto3.
 
 ### Result:
-The application is publicly deployed at the link: https://feature-detective.streamlit.app/
+The application is publicly deployed at the link: https://feature-detective.streamlit.app/<br>
 **To use it, an OpenAI API key is required.**
