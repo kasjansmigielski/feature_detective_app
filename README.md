@@ -10,12 +10,12 @@ The aim of the project was to create a universal application that allows for det
 * finally, the user receives a clear description of the chart along with recommendations - what actions to implement to improve the results related to the analyzed target data column.
 
 ### Dependencies:
-* streamlit
-* pycaret
-* pandas
-* mathplotlib
-* python-dotenv
-* langfuse
-* instructor
-* pydantic
-* boto3
+* streamlit,
+* pycaret,
+* pandas,
+* mathplotlib,
+* python-dotenv,
+* langfuse,
+* instructor,
+* pydantic,
+* boto3.
